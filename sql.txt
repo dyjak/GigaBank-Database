@@ -223,3 +223,5 @@ SET (login, pin) = (SELECT login, pin FROM logins WHERE logins.pass_id = users.p
 
 ALTER TABLE users DROP CONSTRAINT fk_users_logins;
 DROP TABLE logins;
+
+ALTER TABLE users DROP COLUMN pass_id;
