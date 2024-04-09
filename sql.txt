@@ -104,100 +104,6 @@ FOREIGN KEY (user_id) REFERENCES users(user_id);
 
 
 
-
-
-
-######################################################################################################
-######################################################################################################
-#################DBDIAGRAM.IO####################################################################
-######################################################################################################
-######################################################################################################
-
-CREATE TABLE `accounts` (
-  `account_id` integer PRIMARY KEY,
-  `user_id` integer,
-  `currency_id` integer,
-  `balance` float,
-  `account_number` varchar2,
-  `create_date` date,
-  `permission` varchar(255)
-);
-
-CREATE TABLE `users` (
-  `user_id` integer PRIMARY KEY,
-  `name` varchar(255),
-  `surname` varchar(255),
-  `pass_id` integer,
-  `birthdate` date,
-  `sex` boolean
-);
-
-CREATE TABLE `logins` (
-  `pass_id` integer PRIMARY KEY,
-  `login` varchar(255),
-  `pin` key
-);
-
-CREATE TABLE `transactions` (
-  `transaction_id` integer PRIMARY KEY,
-  `account_id` integer,
-  `amount` float,
-  `contractor_account_number` varchar2,
-  `execute_date` timestamp,
-  `description` text
-);
-
-CREATE TABLE `loans` (
-  `loan_id` integer PRIMARY KEY,
-  `title` varchar(255),
-  `amount` float,
-  `currency_id` integer,
-  `interest_percentage` integer,
-  `description` text,
-  `user_id` integer,
-  `create_date` date,
-  `paid_status` varchar(255),
-  `deadline` date
-);
-
-CREATE TABLE `deposits` (
-  `loan_id` integer PRIMARY KEY,
-  `title` varchar(255),
-  `amount` float,
-  `currency_id` integer,
-  `interest_percentage` integer,
-  `description` text,
-  `user_id` integer,
-  `create_date` date,
-  `paid_status` varchar(255),
-  `deadline` date
-);
-
-CREATE TABLE `currencies` (
-  `currency_id` integer PRIMARY KEY,
-  `currency` varchar(255),
-  `usd_conversion` float
-);
-
-ALTER TABLE `accounts` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
-ALTER TABLE `accounts` ADD FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`currency_id`);
-
-ALTER TABLE `users` ADD FOREIGN KEY (`pass_id`) REFERENCES `logins` (`pass_id`);
-
-ALTER TABLE `deposits` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
-ALTER TABLE `deposits` ADD FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`currency_id`);
-
-ALTER TABLE `loans` ADD FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`currency_id`);
-
-ALTER TABLE `transactions` ADD FOREIGN KEY (`account_id`) REFERENCES `accounts` (`account_id`);
-
-ALTER TABLE `loans` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
-
-
-
-
 -- Dodanie rekordów do tabeli currencies
 INSERT INTO currencies (currency_id, currency, usd_conversion) VALUES (1, 'USD', 1.0);
 INSERT INTO currencies (currency_id, currency, usd_conversion) VALUES (2, 'EUR', 0.85);
@@ -301,3 +207,19 @@ INSERT INTO deposits (deposit_id, title, amount, currency_id, interest_percentag
 INSERT INTO deposits (deposit_id, title, amount, currency_id, interest_percentage, description, user_id, create_date, paid_status, deadline) VALUES (18, 'Car Deposit', 10000.0, 1, 9, 'Deposit for future car purchase', 8, CURRENT_DATE, 'unpaid', ADD_MONTHS(CURRENT_DATE, 36));
 INSERT INTO deposits (deposit_id, title, amount, currency_id, interest_percentage, description, user_id, create_date, paid_status, deadline) VALUES (19, 'Wedding Deposit', 15000.0, 1, 10, 'Deposit for future wedding expenses', 9, CURRENT_DATE, 'unpaid', ADD_MONTHS(CURRENT_DATE, 24));
 INSERT INTO deposits (deposit_id, title, amount, currency_id, interest_percentage, description, user_id, create_date, paid_status, deadline) VALUES (20, 'Holiday Deposit', 5000.0, 1, 12, 'Deposit for holiday expenses', 10, CURRENT_DATE, 'unpaid', ADD_MONTHS(CURRENT_DATE, 12));
+
+
+#####MERGE TABELI LOGINS Z USERS
+ALTER TABLE users
+ADD (login VARCHAR2(255), pin VARCHAR2(255));
+UPDATE users
+SET users.login = logins.login,
+    users.pin = logins.pin
+FROM logins
+WHERE users.pass_id = logins.pass_id;
+
+UPDATE users
+SET (login, pin) = (SELECT login, pin FROM logins WHERE logins.pass_id = users.pass_id);
+
+ALTER TABLE users DROP CONSTRAINT fk_users_logins;
+DROP TABLE logins;
