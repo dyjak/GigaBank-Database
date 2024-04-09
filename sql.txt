@@ -225,3 +225,30 @@ ALTER TABLE users DROP CONSTRAINT fk_users_logins;
 DROP TABLE logins;
 
 ALTER TABLE users DROP COLUMN pass_id;
+
+
+
+
+
+####AKTUALIZACJA DEPOSITS I LOANS
+
+ALTER TABLE deposits ADD (status FLOAT);
+
+UPDATE deposits SET status = CASE paid_status
+                                    WHEN 'unpaid' THEN 0.0
+                                    WHEN 'paid' THEN 1.0
+                                    ELSE NULL
+                                  END;
+
+ALTER TABLE deposits DROP COLUMN paid_status;
+
+
+ALTER TABLE loans ADD (status FLOAT);
+
+UPDATE loans SET status = CASE paid_status
+                                    WHEN 'unpaid' THEN 0.0
+                                    WHEN 'paid' THEN 1.0
+                                    ELSE NULL
+                                  END;
+
+ALTER TABLE loans DROP COLUMN paid_status;
