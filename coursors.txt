@@ -1,0 +1,16 @@
+//USERS COURSOR
+DROP TABLE temp_users;
+CREATE GLOBAL TEMPORARY TABLE temp_users AS
+    SELECT * FROM users WHERE 1=0;
+DECLARE
+CURSOR search_cursor_users(argument VARCHAR2) IS
+SELECT * FROM users
+    WHERE UPPER(name) LIKE '%' || UPPER(argument) || '%' OR
+        UPPER(surname) LIKE '%' || UPPER(argument) || '%' OR
+        UPPER(login) LIKE '%' || UPPER(argument) || '%';
+BEGIN
+    FOR user_i IN search_cursor_users('W') LOOP
+        INSERT INTO temp_users VALUES (user_i.user_id, user_i.name, user_i.surname, user_i.birthdate, user_i.sex, user_i.login, user_i.pin);
+    END LOOP;
+END;
+SELECT * FROM TEMP_USERS;
