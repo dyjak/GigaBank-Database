@@ -4,11 +4,24 @@ BEGIN
     EXECUTE IMMEDIATE 'DROP TABLE temp_users';
     EXECUTE IMMEDIATE 'CREATE TABLE temp_users AS SELECT * FROM users WHERE 1=0';
 
-    -- Wypełnianie tabeli danymi
     FOR user_i IN (SELECT * FROM users WHERE UPPER(name) LIKE '%' || UPPER(argument) || '%' OR
                                           UPPER(surname) LIKE '%' || UPPER(argument) || '%' OR
-                                          UPPER(login) LIKE '%' || UPPER(argument) || '%') LOOP
+                                          UPPER(login) LIKE '%' || UPPER(argument) || '%')
+    LOOP
         INSERT INTO temp_users VALUES (user_i.user_id, user_i.name, user_i.surname, user_i.birthdate, user_i.sex, user_i.login, user_i.pin);
+    END LOOP;
+END;
+
+
+create PROCEDURE search_currencies(argument VARCHAR2)
+    AUTHID CURRENT_USER IS
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE temp_currencies';
+    EXECUTE IMMEDIATE 'CREATE TABLE temp_currencies AS SELECT * FROM currencies WHERE 1=0';
+
+    FOR currency_i IN (SELECT * FROM currencies WHERE UPPER(currency) LIKE '%' || UPPER(argument) || '%')
+    LOOP
+        INSERT INTO temp_currencies VALUES (currency_i.currency_id, currency_i.currency, currency_i.usd_conversion);
     END LOOP;
 END;
 
