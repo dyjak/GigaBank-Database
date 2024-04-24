@@ -25,3 +25,23 @@ BEGIN
     END LOOP;
 END;
 
+
+create PROCEDURE update_currency(argument1 VARCHAR2, argument2 FLOAT, argument3 NUMBER)
+    AUTHID CURRENT_USER IS
+BEGIN
+    IF argument2 < 0 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'Value cannot be negative');
+    END IF;
+
+    UPDATE currencies SET CURRENCY = argument1, USD_CONVERSION = argument2 WHERE CURRENCY_ID = argument3;
+    COMMIT;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred.');
+    RAISE;
+END;
+/
+
+
+
