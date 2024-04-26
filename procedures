@@ -45,3 +45,45 @@ END;
 
 
 
+TO BY BYŁO SPOKO ALE CIĘŻKO
+*********************************************************
+CREATE OR REPLACE PROCEDURE search_currencies(
+    argument IN VARCHAR2
+) AUTHID CURRENT_USER IS
+BEGIN
+    BEGIN
+        -- Check if the temporary table already exists, if not, create it
+        EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE temp_currencies(
+            currency_id NUMBER,
+            currency VARCHAR2(100),
+            usd_conversion FLOAT
+        ) ON COMMIT DELETE ROWS';
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE != -955 THEN
+                RAISE;
+            END IF;
+    END;
+
+    -- Clear the contents of the temporary table
+    EXECUTE IMMEDIATE 'TRUNCATE TABLE temp_currencies';
+
+    -- Insert data into the temporary table
+    FOR currency_i IN (
+        SELECT * FROM currencies
+        WHERE UPPER(currency) LIKE '%' || UPPER(argument) || '%'
+    )
+    LOOP
+        INSERT INTO temp_currencies (
+            currency_id,
+            currency,
+            usd_conversion
+        ) VALUES (
+            currency_i.currency_id,
+            currency_i.currency,
+            currency_i.usd_conversion
+        );
+    END LOOP;
+END;
+/
+**********************************
