@@ -1,16 +1,20 @@
-create PROCEDURE search_users(argument VARCHAR2)
+create PROCEDURE search_users(argument1 VARCHAR2, argument2 VARCHAR2)
     AUTHID CURRENT_USER IS
 BEGIN
     EXECUTE IMMEDIATE 'DROP TABLE temp_users';
     EXECUTE IMMEDIATE 'CREATE TABLE temp_users AS SELECT * FROM users WHERE 1=0';
 
-    FOR user_i IN (SELECT * FROM users WHERE UPPER(name) LIKE '%' || UPPER(argument) || '%' OR
-                                          UPPER(surname) LIKE '%' || UPPER(argument) || '%' OR
-                                          UPPER(login) LIKE '%' || UPPER(argument) || '%')
+    FOR user_i IN (SELECT * FROM users WHERE UPPER(name) LIKE '%' || UPPER(argument1) || '%' OR
+                                          UPPER(surname) LIKE '%' || UPPER(argument1) || '%' OR
+                                          UPPER(login) LIKE '%' || UPPER(argument1) || '%'
+                                            ORDER BY surname, argument2)
     LOOP
         INSERT INTO temp_users VALUES (user_i.user_id, user_i.name, user_i.surname, user_i.birthdate, user_i.sex, user_i.login, user_i.pin);
     END LOOP;
 END;
+
+
+
 
 
 create PROCEDURE search_currencies(argument VARCHAR2)
@@ -42,6 +46,92 @@ BEGIN
     RAISE;
 END;
 /
+
+
+
+
+
+create or replace PROCEDURE search_account_info(
+    p_account_id IN INTEGER
+) AUTHID CURRENT_USER IS
+    v_deposit_count INTEGER;
+    v_loan_count INTEGER;
+BEGIN
+    BEGIN
+        EXECUTE IMMEDIATE 'DROP TABLE temp_account_info';
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    EXECUTE IMMEDIATE 'CREATE TABLE temp_account_info(
+        owner_info VARCHAR2(255),
+        account_number VARCHAR2(255),
+        balance FLOAT,
+        currency VARCHAR2(255),
+        deposit_count INTEGER,
+        loan_count INTEGER,
+        create_date DATE
+    )';
+
+    SELECT
+        COUNT(*) INTO v_deposit_count
+    FROM
+        deposits d
+    WHERE
+        d.user_id IN (SELECT u.user_id FROM users u JOIN accounts a ON u.user_id = a.user_id WHERE a.account_id = p_account_id);
+
+    SELECT
+        COUNT(*) INTO v_loan_count
+    FROM
+        loans l
+    WHERE
+        l.user_id IN (SELECT u.user_id FROM users u JOIN accounts a ON u.user_id = a.user_id WHERE a.account_id = p_account_id);
+
+    FOR account_data IN (
+        SELECT
+            u.name || ' ' || u.surname || ' (' || u.login || ')' || ' - ' || a.permission AS owner_info,
+            a.account_number,
+            a.balance,
+            c.currency,
+            v_deposit_count AS deposit_count,
+            v_loan_count AS loan_count,
+            a.create_date
+        FROM
+            accounts a
+            JOIN users u ON a.user_id = u.user_id
+            JOIN currencies c ON a.currency_id = c.currency_id
+        WHERE
+            a.account_id = p_account_id
+    ) LOOP
+        INSERT INTO temp_account_info (
+            owner_info,
+            account_number,
+            balance,
+            currency,
+            deposit_count,
+            loan_count,
+            create_date
+        ) VALUES (
+            account_data.owner_info,
+            account_data.account_number,
+            account_data.balance,
+            account_data.currency,
+            account_data.deposit_count,
+            account_data.loan_count,
+            account_data.create_date
+        );
+    END LOOP;
+
+    COMMIT;
+END;
+/
+
+
+
+
+
+
 
 
 
