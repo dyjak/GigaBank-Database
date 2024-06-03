@@ -1,3 +1,4 @@
+//SEARCH USERS
 create PROCEDURE search_users(argument1 VARCHAR2, argument2 VARCHAR2)
     AUTHID CURRENT_USER IS
 BEGIN
@@ -17,19 +18,48 @@ END;
 
 
 
-create PROCEDURE search_currencies(argument VARCHAR2)
-    AUTHID CURRENT_USER IS
+
+
+
+
+//SEARCH CURRENCIES
+create PROCEDURE search_currencies(
+    p_argument IN VARCHAR2
+) AUTHID CURRENT_USER IS
 BEGIN
-    EXECUTE IMMEDIATE 'DROP TABLE temp_currencies';
-    EXECUTE IMMEDIATE 'CREATE TABLE temp_currencies AS SELECT * FROM currencies WHERE 1=0';
+    BEGIN
+        EXECUTE IMMEDIATE 'DROP VIEW temp_currencies';
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE != -00942 THEN  -- kod błędu dla "table or view does not exist"
+                RAISE;
+            END IF;
+    END;
 
-    FOR currency_i IN (SELECT * FROM currencies WHERE UPPER(currency) LIKE '%' || UPPER(argument) || '%')
-    LOOP
-        INSERT INTO temp_currencies VALUES (currency_i.currency_id, currency_i.currency, currency_i.usd_conversion);
-    END LOOP;
+    EXECUTE IMMEDIATE 'CREATE VIEW temp_currencies AS
+        SELECT
+            currency_id,
+            currency,
+            usd_conversion
+        FROM
+            currencies
+        WHERE
+            UPPER(currency) LIKE ''%' || UPPER(p_argument) || '%''';
+
+    COMMIT;
 END;
+/
 
 
+
+
+
+
+
+
+
+
+//UPDATE CURRENCY
 create PROCEDURE update_currency(argument1 VARCHAR2, argument2 FLOAT, argument3 NUMBER)
     AUTHID CURRENT_USER IS
 BEGIN
@@ -51,20 +81,18 @@ END;
 
 
 
-create or replace PROCEDURE search_account_info(
+
+
+
+//SEARCH ACCOUNT INFO
+create PROCEDURE search_account_info(
     p_account_id IN INTEGER
 ) AUTHID CURRENT_USER IS
     v_deposit_count INTEGER;
     v_loan_count INTEGER;
 BEGIN
-    BEGIN
-        EXECUTE IMMEDIATE 'DROP TABLE temp_account_info';
-    EXCEPTION
-        WHEN OTHERS THEN
-            NULL;
-    END;
 
-    EXECUTE IMMEDIATE 'CREATE TABLE temp_account_info(
+    EXECUTE IMMEDIATE 'CREATE VIEW temp_account_info(
         owner_info VARCHAR2(255),
         account_number VARCHAR2(255),
         balance FLOAT,
@@ -127,53 +155,3 @@ BEGIN
 END;
 /
 
-
-
-
-
-
-
-
-
-TO BY BYŁO SPOKO ALE CIĘŻKO
-*********************************************************
-CREATE OR REPLACE PROCEDURE search_currencies(
-    argument IN VARCHAR2
-) AUTHID CURRENT_USER IS
-BEGIN
-    BEGIN
-        -- Check if the temporary table already exists, if not, create it
-        EXECUTE IMMEDIATE 'CREATE GLOBAL TEMPORARY TABLE temp_currencies(
-            currency_id NUMBER,
-            currency VARCHAR2(100),
-            usd_conversion FLOAT
-        ) ON COMMIT DELETE ROWS';
-    EXCEPTION
-        WHEN OTHERS THEN
-            IF SQLCODE != -955 THEN
-                RAISE;
-            END IF;
-    END;
-
-    -- Clear the contents of the temporary table
-    EXECUTE IMMEDIATE 'TRUNCATE TABLE temp_currencies';
-
-    -- Insert data into the temporary table
-    FOR currency_i IN (
-        SELECT * FROM currencies
-        WHERE UPPER(currency) LIKE '%' || UPPER(argument) || '%'
-    )
-    LOOP
-        INSERT INTO temp_currencies (
-            currency_id,
-            currency,
-            usd_conversion
-        ) VALUES (
-            currency_i.currency_id,
-            currency_i.currency,
-            currency_i.usd_conversion
-        );
-    END LOOP;
-END;
-/
-**********************************
