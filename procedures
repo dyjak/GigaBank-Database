@@ -1,28 +1,326 @@
-//SEARCH USERS
-create PROCEDURE search_users(argument1 VARCHAR2, argument2 VARCHAR2)
-    AUTHID CURRENT_USER IS
+create PROCEDURE add_account(
+    p_user_id        NUMBER,
+    p_currency_id    NUMBER,
+    p_balance        FLOAT,
+    p_account_number VARCHAR2,
+    p_create_date    DATE,
+    p_permission     VARCHAR2
+) AUTHID CURRENT_USER IS
 BEGIN
-    EXECUTE IMMEDIATE 'DROP TABLE temp_users';
-    EXECUTE IMMEDIATE 'CREATE TABLE temp_users AS SELECT * FROM users WHERE 1=0';
+    IF p_balance < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Balance cannot be negative');
+    END IF;
 
-    FOR user_i IN (SELECT * FROM users WHERE UPPER(name) LIKE '%' || UPPER(argument1) || '%' OR
-                                          UPPER(surname) LIKE '%' || UPPER(argument1) || '%' OR
-                                          UPPER(login) LIKE '%' || UPPER(argument1) || '%'
-                                            ORDER BY surname, argument2)
-    LOOP
-        INSERT INTO temp_users VALUES (user_i.user_id, user_i.name, user_i.surname, user_i.birthdate, user_i.sex, user_i.login, user_i.pin);
-    END LOOP;
+    INSERT INTO accounts (user_id, currency_id, balance, account_number, create_date, permission)
+    VALUES (p_user_id, p_currency_id, p_balance, p_account_number, p_create_date, p_permission);
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+        RAISE;
 END;
+/
+create PROCEDURE add_currency(
+    argument1 VARCHAR2,
+    argument2 FLOAT
+) AUTHID CURRENT_USER IS
+BEGIN
+    IF argument2 < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Value cannot be negative');
+    END IF;
 
+    INSERT INTO currencies (currency, usd_conversion) VALUES (argument1, argument2);
+    COMMIT;
 
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
 
+create PROCEDURE add_deposit(
+    p_title             VARCHAR2,
+    p_amount            FLOAT,
+    p_currency_id       NUMBER,
+    p_interest_percentage NUMBER,
+    p_description       CLOB,
+    p_user_id           NUMBER,
+    p_create_date       DATE,
+    p_deadline          DATE,
+    p_status            FLOAT
+) AUTHID CURRENT_USER IS
+BEGIN
+    IF p_amount < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Amount cannot be negative');
+    END IF;
 
+    INSERT INTO deposits (title, amount, currency_id, interest_percentage, description, user_id, create_date, deadline, status)
+    VALUES (p_title, p_amount, p_currency_id, p_interest_percentage, p_description, p_user_id, p_create_date, p_deadline, p_status);
 
+    COMMIT;
 
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
 
+create PROCEDURE add_loan(
+    p_title             VARCHAR2,
+    p_amount            FLOAT,
+    p_currency_id       NUMBER,
+    p_interest_percentage NUMBER,
+    p_description       CLOB,
+    p_user_id           NUMBER,
+    p_create_date       DATE,
+    p_deadline          DATE,
+    p_status            FLOAT
+) AUTHID CURRENT_USER IS
+BEGIN
+    IF p_amount < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Amount cannot be negative');
+    END IF;
 
+    INSERT INTO loans (title, amount, currency_id, interest_percentage, description, user_id, create_date, deadline, status)
+    VALUES (p_title, p_amount, p_currency_id, p_interest_percentage, p_description, p_user_id, p_create_date, p_deadline, p_status);
 
-//SEARCH CURRENCIES
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE add_transaction(
+    p_account_id              NUMBER,
+    p_amount                  FLOAT,
+    p_contractor_account_num  VARCHAR2,
+    p_execute_date            TIMESTAMP,
+    p_description             CLOB
+) AUTHID CURRENT_USER IS
+BEGIN
+
+    INSERT INTO transactions (account_id, amount, contractor_account_number, execute_date, description)
+    VALUES (p_account_id, p_amount, p_contractor_account_num, p_execute_date, p_description);
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+        RAISE;
+END;
+/
+
+create PROCEDURE add_user(
+    p_name      VARCHAR2,
+    p_surname   VARCHAR2,
+    p_birthdate DATE,
+    p_sex       VARCHAR2,
+    p_login     VARCHAR2,
+    p_pin       VARCHAR2
+) AUTHID CURRENT_USER IS
+BEGIN
+    INSERT INTO users (name, surname, birthdate, sex, login, pin)
+    VALUES (p_name, p_surname, p_birthdate, p_sex, p_login, p_pin);
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE delete_account(
+    p_account_id NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM accounts WHERE account_id = p_account_id;
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE = -2292 THEN
+            DBMS_OUTPUT.PUT_LINE('Cannot delete account because there are dependent records.');
+            RAISE_APPLICATION_ERROR(-20002, 'Cannot delete account because there are dependent records.');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+            RAISE;
+        END IF;
+END;
+/
+
+create PROCEDURE delete_currency(
+    currency_id_in NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM currencies WHERE currency_id = currency_id_in;
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE delete_deposit(
+    p_deposit_id NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM deposits WHERE deposit_id = p_deposit_id;
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE delete_loan(
+    p_loan_id NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM loans WHERE loan_id = p_loan_id;
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE delete_transaction(
+    p_transaction_id NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM transactions WHERE transaction_id = p_transaction_id;
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+        RAISE;
+END;
+/
+
+create PROCEDURE delete_user(
+    p_user_id NUMBER
+) AUTHID CURRENT_USER IS
+BEGIN
+    DELETE FROM users WHERE user_id = p_user_id;
+    COMMIT;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE = -2292 THEN
+            DBMS_OUTPUT.PUT_LINE('Alert: Cannot delete user because there are dependent records.');
+            RAISE_APPLICATION_ERROR(-20002, 'Alert: Cannot delete user because there are dependent records.');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+            RAISE;
+        END IF;
+END;
+/
+
+create PROCEDURE REFRESHALLTABLES AS
+BEGIN
+    -- Usunięcie wszystkich rekordów z tabel
+    DELETE FROM transactions where 1=1;
+    DELETE FROM loans where 1=1;
+    DELETE FROM deposits where 1=1;
+    DELETE FROM users where 1=1;
+    DELETE FROM accounts where 1=1;
+
+    -- Wyłączenie sprawdzania kluczy obcych
+    EXECUTE IMMEDIATE 'ALTER SESSION SET CONSTRAINTS = DEFERRED';
+
+    -- Aktualizacja tabel
+    -- Na wypadek błędów podczas wykonywania procedury, używam bloku TRY-CATCH
+    BEGIN
+        -- Wszystkie Twoje tabele
+        EXECUTE IMMEDIATE 'ALTER TABLE accounts DISABLE CONSTRAINT fk_accounts_users';
+        EXECUTE IMMEDIATE 'ALTER TABLE accounts DISABLE CONSTRAINT fk_accounts_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE users DISABLE CONSTRAINT fk_users_logins';
+        EXECUTE IMMEDIATE 'ALTER TABLE deposits DISABLE CONSTRAINT fk_deposits_users';
+        EXECUTE IMMEDIATE 'ALTER TABLE deposits DISABLE CONSTRAINT fk_deposits_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE loans DISABLE CONSTRAINT fk_loans_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE transactions DISABLE CONSTRAINT fk_transactions_accounts';
+        EXECUTE IMMEDIATE 'ALTER TABLE loans DISABLE CONSTRAINT fk_loans_users';
+
+        -- Dodanie nowych rekordów do tabel
+
+        -- Aktualizacja wszystkich tabel
+        EXECUTE IMMEDIATE 'ALTER TABLE accounts ENABLE CONSTRAINT fk_accounts_users';
+        EXECUTE IMMEDIATE 'ALTER TABLE accounts ENABLE CONSTRAINT fk_accounts_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE users ENABLE CONSTRAINT fk_users_logins';
+        EXECUTE IMMEDIATE 'ALTER TABLE deposits ENABLE CONSTRAINT fk_deposits_users';
+        EXECUTE IMMEDIATE 'ALTER TABLE deposits ENABLE CONSTRAINT fk_deposits_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE loans ENABLE CONSTRAINT fk_loans_currencies';
+        EXECUTE IMMEDIATE 'ALTER TABLE transactions ENABLE CONSTRAINT fk_transactions_accounts';
+        EXECUTE IMMEDIATE 'ALTER TABLE loans ENABLE CONSTRAINT fk_loans_users';
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            -- W razie błędów, przywróć klucze obce
+            EXECUTE IMMEDIATE 'ALTER SESSION SET CONSTRAINTS = IMMEDIATE';
+            RAISE;
+    END;
+END;
+/
+
+create PROCEDURE search_account_info(
+    p_account_id IN INTEGER
+) AUTHID CURRENT_USER IS
+    v_deposit_count INTEGER;
+    v_loan_count INTEGER;
+BEGIN
+    -- Obliczanie liczby depozytów
+    SELECT COUNT(*) INTO v_deposit_count
+    FROM deposits d
+    WHERE d.user_id IN (
+        SELECT u.user_id
+        FROM users u
+        JOIN accounts a ON u.user_id = a.user_id
+        WHERE a.account_id = p_account_id
+    );
+
+    -- Obliczanie liczby pożyczek
+    SELECT COUNT(*) INTO v_loan_count
+    FROM loans l
+    WHERE l.user_id IN (
+        SELECT u.user_id
+        FROM users u
+        JOIN accounts a ON u.user_id = a.user_id
+        WHERE a.account_id = p_account_id
+    );
+
+    -- Tworzenie widoku account_info_view z użyciem dynamicznego SQL
+    EXECUTE IMMEDIATE '
+        CREATE OR REPLACE VIEW account_info_view AS
+        SELECT
+            u.login AS owner,
+            a.permission,
+            a.account_number,
+            b.balance_currency,
+            ' || v_deposit_count || ' AS deposit_count,
+            ' || v_loan_count || ' AS loan_count,
+            a.create_date
+        FROM
+            accounts a
+            JOIN users u ON a.user_id = u.user_id
+            JOIN balance_currency_view b ON a.account_id = b.account_id
+        WHERE
+            a.account_id = ' || p_account_id;
+
+    COMMIT;
+END;
+/
+
 create PROCEDURE search_currencies(
     p_argument IN VARCHAR2
 ) AUTHID CURRENT_USER IS
@@ -50,16 +348,72 @@ BEGIN
 END;
 /
 
+create PROCEDURE search_users(
+    argument1 VARCHAR2,
+    argument2 VARCHAR2
+) AUTHID CURRENT_USER IS
+BEGIN
+    BEGIN
+        EXECUTE IMMEDIATE 'DROP VIEW temp_users';
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE != -00942 THEN  -- kod błędu dla "table or view does not exist"
+                RAISE;
+            END IF;
+    END;
 
+    EXECUTE IMMEDIATE 'CREATE VIEW temp_users AS
+        SELECT
+            user_id,
+            name,
+            surname,
+            birthdate,
+            sex,
+            login,
+            pin
+        FROM
+            users
+        WHERE
+            UPPER(name) LIKE ''%' || UPPER(argument1) || '%'' OR
+            UPPER(surname) LIKE ''%' || UPPER(argument1) || '%'' OR
+            UPPER(login) LIKE ''%' || UPPER(argument1) || '%''
+        ORDER BY
+            surname, ' || argument2;
 
+    COMMIT;
+END;
+/
 
+create PROCEDURE update_account(
+    p_account_id     NUMBER,
+    p_user_id        NUMBER,
+    p_currency_id    NUMBER,
+    p_balance        FLOAT,
+    p_account_number VARCHAR2,
+    p_create_date    DATE,
+    p_permission     VARCHAR2
+) AUTHID CURRENT_USER IS
+BEGIN
+    IF p_balance < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Balance cannot be negative');
+    END IF;
 
+    UPDATE accounts
+    SET user_id = p_user_id,
+        currency_id = p_currency_id,
+        balance = p_balance,
+        account_number = p_account_number,
+        create_date = p_create_date,
+        permission = p_permission
+    WHERE account_id = p_account_id;
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+        RAISE;
+END;
+/
 
-
-
-
-
-//UPDATE CURRENCY
 create PROCEDURE update_currency(argument1 VARCHAR2, argument2 FLOAT, argument3 NUMBER)
     AUTHID CURRENT_USER IS
 BEGIN
@@ -77,81 +431,133 @@ BEGIN
 END;
 /
 
-
-
-
-
-
-
-
-//SEARCH ACCOUNT INFO
-create PROCEDURE search_account_info(
-    p_account_id IN INTEGER
+create PROCEDURE update_deposit(
+    p_deposit_id            NUMBER,
+    p_title                 VARCHAR2,
+    p_amount                FLOAT,
+    p_currency_id           NUMBER,
+    p_interest_percentage   NUMBER,
+    p_description           CLOB,
+    p_create_date           DATE,
+    p_deadline              DATE,
+    p_status                FLOAT
 ) AUTHID CURRENT_USER IS
-    v_deposit_count INTEGER;
-    v_loan_count INTEGER;
 BEGIN
+    IF p_amount < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Amount cannot be negative');
+    END IF;
 
-    EXECUTE IMMEDIATE 'CREATE VIEW temp_account_info(
-        owner_info VARCHAR2(255),
-        account_number VARCHAR2(255),
-        balance FLOAT,
-        currency VARCHAR2(255),
-        deposit_count INTEGER,
-        loan_count INTEGER,
-        create_date DATE
-    )';
-
-    SELECT
-        COUNT(*) INTO v_deposit_count
-    FROM
-        deposits d
+    UPDATE deposits
+    SET
+        title               = p_title,
+        amount              = p_amount,
+        currency_id         = p_currency_id,
+        interest_percentage = p_interest_percentage,
+        description         = p_description,
+        create_date         = p_create_date,
+        deadline            = p_deadline,
+        status              = p_status
     WHERE
-        d.user_id IN (SELECT u.user_id FROM users u JOIN accounts a ON u.user_id = a.user_id WHERE a.account_id = p_account_id);
-
-    SELECT
-        COUNT(*) INTO v_loan_count
-    FROM
-        loans l
-    WHERE
-        l.user_id IN (SELECT u.user_id FROM users u JOIN accounts a ON u.user_id = a.user_id WHERE a.account_id = p_account_id);
-
-    FOR account_data IN (
-        SELECT
-            u.name || ' ' || u.surname || ' (' || u.login || ')' || ' - ' || a.permission AS owner_info,
-            a.account_number,
-            a.balance,
-            c.currency,
-            v_deposit_count AS deposit_count,
-            v_loan_count AS loan_count,
-            a.create_date
-        FROM
-            accounts a
-            JOIN users u ON a.user_id = u.user_id
-            JOIN currencies c ON a.currency_id = c.currency_id
-        WHERE
-            a.account_id = p_account_id
-    ) LOOP
-        INSERT INTO temp_account_info (
-            owner_info,
-            account_number,
-            balance,
-            currency,
-            deposit_count,
-            loan_count,
-            create_date
-        ) VALUES (
-            account_data.owner_info,
-            account_data.account_number,
-            account_data.balance,
-            account_data.currency,
-            account_data.deposit_count,
-            account_data.loan_count,
-            account_data.create_date
-        );
-    END LOOP;
+        deposit_id = p_deposit_id;
 
     COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
 END;
 /
+
+create PROCEDURE update_loan(
+    p_loan_id              NUMBER,
+    p_title                VARCHAR2,
+    p_amount               FLOAT,
+    p_currency_id          NUMBER,
+    p_interest_percentage  NUMBER,
+    p_description          CLOB,
+    p_create_date          DATE,
+    p_deadline             DATE,
+    p_status               FLOAT
+) AUTHID CURRENT_USER IS
+BEGIN
+    IF p_amount < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Amount cannot be negative');
+    END IF;
+
+    UPDATE loans
+    SET
+        title               = p_title,
+        amount              = p_amount,
+        currency_id         = p_currency_id,
+        interest_percentage = p_interest_percentage,
+        description         = p_description,
+        create_date         = p_create_date,
+        deadline            = p_deadline,
+        status              = p_status
+    WHERE
+        loan_id = p_loan_id;
+
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE update_transaction(
+    p_transaction_id            NUMBER,
+    p_account_id                NUMBER,
+    p_amount                    FLOAT,
+    p_contractor_account_num    VARCHAR2,
+    p_description               CLOB
+) AUTHID CURRENT_USER IS
+BEGIN
+    UPDATE transactions
+    SET
+        account_id                = p_account_id,
+        amount                    = p_amount,
+        contractor_account_number = p_contractor_account_num,
+        description               = p_description
+    WHERE
+        transaction_id = p_transaction_id;
+
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
+create PROCEDURE update_user(
+    p_user_id   NUMBER,
+    p_name      VARCHAR2,
+    p_surname   VARCHAR2,
+    p_birthdate DATE,
+    p_sex       VARCHAR2,
+    p_login     VARCHAR2,
+    p_pin       VARCHAR2
+) AUTHID CURRENT_USER IS
+BEGIN
+    UPDATE users
+    SET name = p_name,
+        surname = p_surname,
+        birthdate = p_birthdate,
+        sex = p_sex,
+        login = p_login,
+        pin = p_pin
+    WHERE user_id = p_user_id;
+    COMMIT;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error occurred.');
+            RAISE;
+END;
+/
+
 

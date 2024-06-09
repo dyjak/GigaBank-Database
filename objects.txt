@@ -1,0 +1,6 @@
+create TYPE balance_currency AS OBJECT (
+    balance FLOAT,
+    currency VARCHAR2(255)
+)
+/
+

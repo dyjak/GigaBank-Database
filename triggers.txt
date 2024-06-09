@@ -1,0 +1,54 @@
+create trigger TRG_USERS_ID
+    before insert
+    on USERS
+    for each row
+BEGIN
+    SELECT users_seq.NEXTVAL INTO :NEW.user_id FROM dual;
+END;
+/
+
+create trigger TRG_TRANSACTIONS_BEFORE_INSERT
+    before insert
+    on TRANSACTIONS
+    for each row
+BEGIN
+    SELECT transactions_seq.NEXTVAL INTO :NEW.transaction_id FROM dual;
+END;
+/
+
+create trigger LOANS_TRIGGER
+    before insert
+    on LOANS
+    for each row
+BEGIN
+    :NEW.loan_id := loans_seq.NEXTVAL;
+END;
+/
+
+create trigger DEPOSIT_ID_TRIGGER
+    before insert
+    on DEPOSITS
+    for each row
+BEGIN
+    SELECT deposit_id_seq.NEXTVAL INTO :new.DEPOSIT_ID FROM dual;
+END;
+/
+
+create trigger CURRENCIES_TRIGGER
+    before insert
+    on CURRENCIES
+    for each row
+BEGIN
+    :NEW.currency_id := currency_id_seq.NEXTVAL;
+END;
+/
+
+create trigger TRG_ACCOUNTS_BEFORE_INSERT
+    before insert
+    on ACCOUNTS
+    for each row
+BEGIN
+    SELECT accounts_seq.NEXTVAL INTO :NEW.account_id FROM dual;
+END;
+/
+

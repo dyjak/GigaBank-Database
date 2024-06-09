@@ -1,3 +1,16 @@
+create table USERS
+(
+    USER_ID   NUMBER not null
+        primary key,
+    NAME      VARCHAR2(255),
+    SURNAME   VARCHAR2(255),
+    BIRTHDATE DATE,
+    SEX       VARCHAR2(255),
+    LOGIN     VARCHAR2(255),
+    PIN       VARCHAR2(255)
+)
+/
+
 INSERT INTO HR.USERS (USER_ID, NAME, SURNAME, BIRTHDATE, SEX, LOGIN, PIN) VALUES (1, 'John', 'Doe', DATE '1990-01-01', '1', 'john_doe', '1234');
 INSERT INTO HR.USERS (USER_ID, NAME, SURNAME, BIRTHDATE, SEX, LOGIN, PIN) VALUES (2, 'Jane', 'Doe', DATE '1992-05-15', '0', 'jane_doe', '5678');
 INSERT INTO HR.USERS (USER_ID, NAME, SURNAME, BIRTHDATE, SEX, LOGIN, PIN) VALUES (3, 'Alice', 'Smith', DATE '1985-09-20', '0', 'alice_smith', '9012');
